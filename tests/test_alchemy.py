@@ -132,3 +132,39 @@ class SQLAlchemyNonIntegerPkTestCase(unittest.TestCase):
         NonIntegerPkFactory.reset_sequence()
         nonint2 = NonIntegerPkFactory.create()
         self.assertEqual('foo1', nonint2.id)
+
+
+@unittest.skipIf(sqlalchemy is None, "SQLalchemy not installed.")
+class SQLAlchemySessionOverrideTest(unittest.TestCase):
+
+    def setUp(self):
+        super(SQLAlchemySessionOverrideTest, self).setUp()
+        self.session = sqlalchemy.orm.scoped_session(sqlalchemy.orm.sessionmaker())
+        self.session.configure(bind=models.engine)
+
+    def tearDown(self):
+        self.session.rollback()
+        StandardFactory.FACTORY_SESSION.rollback()
+        super(SQLAlchemySessionOverrideTest, self).tearDown()
+
+    def test_alt_session(self):
+        """Ensure that passing _session to a SQLAlchemy session overrides FACTORY_SESSION."""
+        StandardFactory.create(_session=self.session)
+        self.assertEqual([],
+            StandardFactory.FACTORY_SESSION.query(models.StandardModel).all())
+
+    def test_chained_alt_session(self):
+        class BaseObjectFactory(factory.alchemy.SQLAlchemyModelFactory):
+            FACTORY_FOR = models.StandardModel
+            FACTORY_SESSION = models.session
+            FACTORY_HIDDEN_ARGS = ('bar',)
+
+            id = factory.Sequence(lambda n: n)
+            foo = factory.Sequence(lambda n: 'foo%d' % n)
+            bar = factory.SubFactory(StandardFactory)
+
+        BaseObjectFactory.create(_session=self.session)
+        self.session.flush()
+        self.assertEqual(2, self.session.query(models.StandardModel).count())
+        self.assertEqual([],
+            StandardFactory.FACTORY_SESSION.query(models.StandardModel).all())

@@ -45,7 +45,7 @@ class SQLAlchemyModelFactory(base.Factory):
     @classmethod
     def _create(cls, target_class, *args, **kwargs):
         """Create an instance of the model, and save it to the database."""
-        session = cls.FACTORY_SESSION
+        session = kwargs.pop('_session', cls.FACTORY_SESSION)
         obj = target_class(*args, **kwargs)
         session.add(obj)
         return obj
