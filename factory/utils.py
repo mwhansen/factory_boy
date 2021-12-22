@@ -142,10 +142,10 @@ def log_repr(obj):
     return compat.force_text(repr(obj))
 
 
-class ResetableIterator(object):
+class ResetableIterator:
     """An iterator wrapper that can be 'reset()' to its start."""
     def __init__(self, iterator, **kwargs):
-        super(ResetableIterator, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.iterator = iter(iterator)
         self.past_elements = collections.deque()
         self.next_elements = collections.deque()
@@ -155,9 +155,13 @@ class ResetableIterator(object):
             if self.next_elements:
                 yield self.next_elements.popleft()
             else:
-                value = next(self.iterator)
-                self.past_elements.append(value)
-                yield value
+                try:
+                    value = next(self.iterator)
+                except StopIteration:
+                    break
+                else:
+                    self.past_elements.append(value)
+                    yield value
 
     def reset(self):
         self.next_elements.clear()

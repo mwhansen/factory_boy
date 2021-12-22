@@ -180,6 +180,8 @@ if django is not None:
 
 @unittest.skipIf(django is None, "Django not installed.")
 class ModelTests(django_test.TestCase):
+    databases = {'default', 'replica'}
+
     def test_unset_model(self):
         class UnsetModelFactory(factory.django.DjangoModelFactory):
             pass
